@@ -1,11 +1,16 @@
 const API_BASE_URL = 'https://emp25-backend.hackathon.varram.me';
 
-interface Beacon {
+export interface Beacon {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  votes?: number;
+  image: string;
+  wheelchairAccessible: boolean;
+  audioAccessible: boolean;
+  visionAccessible: boolean;
   _id: string;
-  entry: {
-    votes: number;
-    [key: string]: any;
-  }
 }
 
 export async function getAllBeacons(): Promise<Beacon[]> {
@@ -16,6 +21,7 @@ export async function getAllBeacons(): Promise<Beacon[]> {
   return response.json();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createBeacon(beaconData: any): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/beacons`, {
     method: 'POST',

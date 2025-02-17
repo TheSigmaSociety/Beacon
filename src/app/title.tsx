@@ -15,12 +15,6 @@ const Title = ({ className }: { className?: string }) => {
                 <h1 className="text-6xl md:text-9xl">B E A C O N</h1>
                 <h2 className="text-xl md:text-2xl subtitle">Making lives more accessible.</h2>
             </div>
-            {/* <button 
-                onClick={scrollToNextSection}
-                className="mt-8 px-6 py-3 bg-white text-black rounded-full hover:bg-opacity-80 transition-all duration-300"
-            >
-                Learn More ↓
-            </button> */}
         </div>
     </div>
   );

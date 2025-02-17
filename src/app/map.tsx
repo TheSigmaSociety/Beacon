@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { getAllBeacons, createBeacon, deleteBeacon, upvoteBeacon, downvoteBeacon } from '../lib/api';
+import { Beacon } from '../lib/api';
 
 const apiKey = "AIzaSyCIqsxA_PgkljVeadCtvVy01qqq4eE12OU";
 
@@ -20,22 +21,6 @@ const defaultCenter = {
 interface LatLong {
     lat: number;
     lng: number;
-}
-
-interface EntryData {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  votes: number;
-  image: string;
-  wheelchairAccessible: boolean;
-  audioAccessible: boolean;
-  visionAccessible: boolean;
-}
-
-interface EntryResponse {
-    entry: EntryData;
 }
 
 const MapComponent = () => {
@@ -74,27 +59,27 @@ const MapComponent = () => {
     }
   };
 
-  const addMarkerFromData = async (entry: EntryData, setMarkers: React.Dispatch<React.SetStateAction<any[]>>) => {
+  const addMarkerFromBeacon = async (beacon: Beacon, setMarkers: React.Dispatch<React.SetStateAction<any[]>>) => {
     try {
-      const location = await geocodeAddress(entry.location);
+      const location = await geocodeAddress(beacon.location);
       
       if (!location) {
-        console.error('Could not geocode location:', entry.location);
+        console.error('Could not geocode location:', beacon.location);
         return;
       }
   
       const newMarker = {
         position: { lat: location.lat, lng: location.lng },
-        title: entry.title,
-        id: entry.id,
+        title: beacon.title,
+        id: beacon._id,
         data: {
-          description: entry.description,
-          votes: entry.votes,
-          image: entry.image,
+          description: beacon.description,
+          votes: beacon.votes,
+          image: beacon.image,
           accessibility: {
-            wheelchair: entry.wheelchairAccessible,
-            audio: entry.audioAccessible,
-            vision: entry.visionAccessible
+            wheelchair: beacon.wheelchairAccessible,
+            audio: beacon.audioAccessible,
+            vision: beacon.visionAccessible
           }
         }
       };
@@ -155,21 +140,9 @@ const MapComponent = () => {
       setIsDataLoading(true);
       try {
         const beacons = await getAllBeacons();
-        // Assume beacons is an array of Beacon objects that need converting
         if (Array.isArray(beacons)) {
           for (const beacon of beacons) {
-            const entry: EntryData = {
-              id: beacon._id,
-              title: beacon.entry.title || "",
-              description: beacon.entry.description || "",
-              location: beacon.entry.location || "",
-              votes: beacon.entry.votes || 0,
-              image: beacon.entry.image || "",
-              wheelchairAccessible: beacon.entry.wheelchairAccessible || false,
-              audioAccessible: beacon.entry.audioAccessible || false,
-              visionAccessible: beacon.entry.visionAccessible || false,
-            };
-            await addMarkerFromData(entry, setMarkers);
+            await addMarkerFromBeacon(beacon, setMarkers);
           }
         }
       } catch (error: any) {

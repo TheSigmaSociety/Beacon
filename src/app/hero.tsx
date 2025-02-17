@@ -16,7 +16,7 @@ export default function Hero() {
           One Beacon at a time.
         </h3>
         <div className="animate-bounce w-full h-auto flex items-center justify-start p-12">
-          <FaArrowDown />
+          Scroll to see the map! &nbsp; <FaArrowDown />
         </div>
       </div>
 
