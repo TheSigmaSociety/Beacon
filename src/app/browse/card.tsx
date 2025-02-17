@@ -6,8 +6,6 @@ const URL = "http://localhost:6900/beacons" // change to the actual URL
 
 export default function Card(beaconVal: any) { // changed to use json instead of string
   
-  
-
   const actualValue = beaconVal.beaconVal; //what is this bro
     var title = actualValue.title
     var wheelchair = actualValue.wheelchairAccessible == true ? "✅" : "❌"
