@@ -8,19 +8,23 @@ import Header from './header';
 import Hero from './hero'
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem('hasVisited');
+    }
+    return true;
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsFadingOut(true);
-      setTimeout(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 100);
-    }, 1000); 
+        localStorage.setItem('hasVisited', 'true');
+      }, 1000);
 
-    return () => clearTimeout(timer);
-  }, []); 
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   return (
     <div className="w-screen h-screen relative bg-[#FAF9F6]">
@@ -29,7 +33,7 @@ export default function Home() {
           ${isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
       >
-        <Title className={`transition-opacity duration-[2000ms] ${isLoading && !isFadingOut ? "opacity-100" : "opacity-0"}`} />
+        <Title />
       </div>
       {!isLoading && <Header />}
       {!isLoading && <Hero />}
