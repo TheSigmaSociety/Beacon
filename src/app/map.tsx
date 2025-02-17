@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { getAllBeacons, createBeacon, deleteBeacon, upvoteBeacon, downvoteBeacon } from '../lib/api';
 
 const apiKey = "AIzaSyCIqsxA_PgkljVeadCtvVy01qqq4eE12OU";
 
@@ -22,29 +23,31 @@ interface LatLong {
 }
 
 interface EntryData {
-    id: string;
-    title: string;
-    description: string;
-    location: string;
-    votes: number;
-    image: string;
-    wheelchairAccessible: boolean;
-    audioAccessible: boolean;
-    visionAccessible: boolean;
-  }
-  
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  votes: number;
+  image: string;
+  wheelchairAccessible: boolean;
+  audioAccessible: boolean;
+  visionAccessible: boolean;
+}
+
 interface EntryResponse {
     entry: EntryData;
 }
 
 const MapComponent = () => {
   const [userLocation, setUserLocation] = useState(defaultCenter);
-  const [isLoading, setIsLoading] = useState(true);
   const [markers, setMarkers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  /** Gets user location and centers the map on load to the user location */
+  const [isGeoLoading, setIsGeoLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  /** Gets user location and centers the map on load to the user location */
   const geocodeAddress = async (address: string): Promise<LatLong | null> => {
     try {
       // Encode address for URL
@@ -102,68 +105,99 @@ const MapComponent = () => {
     }
   };
 
-  if (isLoading) return <div>Loading map...</div>;
-  if (error) return <div>{error}</div>;
-
-  const fetchEntries = async () => {
-    try {
-      const response = await fetch('http://localhost:3010');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch entries');
-      }
-  
-      const data = await response.json();
-      
-      // Assuming response is an array of entries
-      data.forEach((entryData: EntryData) => {
-        addMarkerFromData(entryData, setMarkers);
-      });
-  
-    } catch (error) {
-      console.error('Error fetching entries:', error);
-      setError('Failed to load entries from server');
-    }
-  };
-
   useEffect(() => {
+    setIsGeoLoading(true);
+    
+    // Set timeout to prevent infinite loading using ref
+    timeoutRef.current = setTimeout(() => {
+      setIsGeoLoading(false);
+      setError("Location request timed out");
+    }, 10000); // 10 second timeout
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
-          setIsLoading(false);
+          setIsGeoLoading(false);
         },
         (error) => {
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
           setError("Unable to retrieve your location");
-          setIsLoading(false);
+          setIsGeoLoading(false);
         }
       );
     } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       setError("Geolocation is not supported by your browser");
-      setIsLoading(false);
+      setIsGeoLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchEntries();
+  
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
   
+  useEffect(() => {
+    async function loadData() {
+      setIsDataLoading(true);
+      try {
+        const beacons = await getAllBeacons();
+        // Assume beacons is an array of Beacon objects that need converting
+        if (Array.isArray(beacons)) {
+          for (const beacon of beacons) {
+            const entry: EntryData = {
+              id: beacon._id,
+              title: beacon.entry.title || "",
+              description: beacon.entry.description || "",
+              location: beacon.entry.location || "",
+              votes: beacon.entry.votes || 0,
+              image: beacon.entry.image || "",
+              wheelchairAccessible: beacon.entry.wheelchairAccessible || false,
+              audioAccessible: beacon.entry.audioAccessible || false,
+              visionAccessible: beacon.entry.visionAccessible || false,
+            };
+            await addMarkerFromData(entry, setMarkers);
+          }
+        }
+      } catch (error: any) {
+        console.error('Data fetching error:', error);
+        setError(`Failed to fetch data: ${error.message}`);
+      } finally {
+        setIsDataLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+  
+  // Modified return statement
   return (
-    <div className="w-full h-full flex justify-center items-center object-cover">
-      <LoadScript googleMapsApiKey={apiKey}>
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={userLocation}
-          zoom={15}
-        >
-            {markers.map((marker, index) => (
-                <Marker key={index} position={marker.position} title={marker.title} />
-            ))}
-        </GoogleMap>
-      </LoadScript>
+    <div className="w-screen h-screen flex justify-center items-center object-cover bg-[#FAF9F6]">
+      {isGeoLoading || isDataLoading ? (
+        <div>Map Loading...</div>
+      ) : error ? (
+        <div>{error}</div>
+      ) : (
+        <LoadScript googleMapsApiKey={apiKey}>
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={userLocation}
+            zoom={15}
+          />
+        </LoadScript>
+      )}
     </div>
   );
 };

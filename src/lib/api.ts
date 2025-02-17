@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://emp25-backend.hackathon.varram.me';
+const API_BASE_URL = 'https://emp25-backend.hackathon.varram.me';
 
 interface Beacon {
   _id: string;
@@ -11,7 +11,7 @@ interface Beacon {
 export async function getAllBeacons(): Promise<Beacon[]> {
   const response = await fetch(`${API_BASE_URL}/beacons`);
   if (!response.ok) {
-    throw new Error('Failed to fetch beacons');
+    throw new Error(`Failed to fetch beacons: ${response.status} - ${response.statusText}`);
   }
   return response.json();
 }

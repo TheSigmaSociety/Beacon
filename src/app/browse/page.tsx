@@ -33,6 +33,8 @@ export default function Browse() {
   return (
     <div className="w-screen min-h-screen bg-[#FAF9F6] relative">
       <Header />
+      <div className="absolute top-10 left-[-3rem] w-1/2 h-1/3 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 opacity-40 blur-3xl rounded-full"></div>
+      <div className="absolute bottom-0 right-0 w-1/2 h-2/3 bg-gradient-to-r from-blue-400 via-teal-500 to-green-400 opacity-30 blur-3xl rounded-full"></div>
       <div className="w-full h-full flex flex-col justify-center items-center">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-8 mx-12 mt-8">
           {beacons.map((beacon) => (
