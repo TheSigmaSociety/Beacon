@@ -10,7 +10,7 @@ export default function Hero() {
                     A More Accessible World
                 </h1>
                 <h3 className="text-xl md:text-3xl text-black p-6 md:p-12">
-                    One Beacon at a Time
+                    One Beacon at a time.
                 </h3>
 
 
