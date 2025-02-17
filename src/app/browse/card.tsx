@@ -4,36 +4,13 @@ import Image from "next/image";
 
 
 
-export default function Card(beaconVal: string) {
-    var title = "Freddy Fazbear's Pizzaria"
-    var wheelchair = "❌"
-    var deaf = "✅"
-    var blind = "❌"
-    var location = "69 Pizzaria Freddy Har har har"
-
-    const fetchData = async () => {
-        try {
-            const response = await fetch(URL + "/becons", {
-              method: 'GET'
-            });
-
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          const data = await response.json();
-          data.forEach((beacon: any) => {
-            if(beacon.id == beaconVal){
-                console.log(beacon)
-                wheelchair = beacon.wheelchairAccessible
-                deaf = beacon.deafFriendly
-                blind = beacon.visionAccessible
-            }
-          })
-          console.log(data);
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        }
-      };
+export default function Card(beaconVal: any) { // changed to use json instead of string
+  const actualValue = beaconVal.beaconVal; //what is this bro
+    var title = actualValue.title
+    var wheelchair = actualValue.wheelchairAccessible == true ? "✅" : "❌"
+    var deaf = actualValue.deafFriendly == true ? "✅" : "❌"
+    var blind = actualValue.visionAccessible == true ? "✅" : "❌"
+    var location = actualValue.location
       return (
         <div className="bg-white/70 backdrop-blur-lg shadow-lg border border-gray-200 rounded-xl p-6 text-black transition-transform duration-300 hover:-translate-y-2 w-[350px]">
             <h1 className="text-xl font-semibold text-gray-900 mb-2 text-center">{title}</h1>
