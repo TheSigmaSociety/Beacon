@@ -27,7 +27,7 @@ body {
 }
 
 .rotating {
-  animation: rotating 2s ease infinite;
+  animation: rotating 10s ease-in-out infinite alternate;
 }
 
 @keyframes gradientBackground {
@@ -37,9 +37,20 @@ body {
 }
 
 @keyframes rotating {
-  0% { --transform-rotate: 12deg; }
-  50% { --transform-rotate: 0deg; }
-  100% { --transform-rotate: 12deg; }
+  0% { transform: rotate(2deg); translate: 0 -10px; }
+  100% { transform: rotate(-2deg); }
+}
+
+.flicker:hover {
+  animation: flicker 10s infinite alternate;
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  25% { opacity: 0.8; }
+  50% { opacity: 1; }
+  75% { opacity: 0.6; }
+  100% { opacity: 1; }
 }
 
 @layer base {
