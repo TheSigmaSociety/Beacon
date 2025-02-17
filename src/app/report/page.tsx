@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getAllBeacons, createBeacon, deleteBeacon, upvoteBeacon, downvoteBeacon } from '../../lib/api';
+import { getAllBeacons, createBeacon } from "../../lib/api";
 import {
   Form,
   FormField,
@@ -23,22 +23,36 @@ import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  description: z
+  description: z.string().max(100, "Description cannot exceed 100 characters"),
+  location: z.string().min(1, "Location is required"),
+  lat: z
     .string()
-    .max(100, "Description cannot exceed 100 characters"),
-    latitude: z.number().refine((val) => val >= -90 && val <= 90, {
-      message: "Latitude must be between -90 and 90",
-    }),
-    longitude: z.number().refine((val) => val >= -180 && val <= 180, {
-      message: "Longitude must be between -180 and 180",
-    }),
-  wheelchairAccessible: z.boolean().optional(),
-  deafFriendly: z.boolean().optional(),
-  brailleAvailable: z.boolean().optional(),
-  image: z
-    .custom<FileList>()
-    .refine((files) => files && files.length > 0, "Image is required")
-    .optional(),
+    .refine(
+      (val) =>
+        !isNaN(parseFloat(val)) &&
+        parseFloat(val) >= -90 &&
+        parseFloat(val) <= 90,
+      {
+        message: "Latitude must be a number between -90 and 90",
+      }
+    )
+    .transform((val) => parseFloat(val)),
+  lng: z
+    .string()
+    .refine(
+      (val) =>
+        !isNaN(parseFloat(val)) &&
+        parseFloat(val) >= -180 &&
+        parseFloat(val) <= 180,
+      {
+        message: "Longitude must be a number between -180 and 180",
+      }
+    )
+    .transform((val) => parseFloat(val)),
+  wheelchair: z.boolean().default(false),
+  audio: z.boolean().default(false),
+  vision: z.boolean().default(false),
+  image: z.string().optional(),
 });
 
 export default function ReportsPage() {
@@ -47,12 +61,13 @@ export default function ReportsPage() {
     defaultValues: {
       title: "",
       description: "",
-      latitude: 0,
-      longitude: 0,
-      wheelchairAccessible: false,
-      deafFriendly: false,
-      brailleAvailable: false,
-      image: undefined,
+      location: "",
+      lat: 0,
+      lng: 0,
+      wheelchair: false,
+      audio: false,
+      vision: false,
+      image: "",
     },
   });
 
@@ -66,28 +81,51 @@ export default function ReportsPage() {
   const { toast } = useToast();
 
   const onSubmit = async (data: any) => {
-    await createBeacon(data)
-      .then(() => {
-        toast({
-          title: "Success",
-          description: "Report submitted successfully!",
-          duration: 3000,
-        });
-      })
-      .catch(() => {
-        toast({
-          title: "Error",
-          description: "Failed to submit report. Please try again.",
-          duration: 3000,
-        });
+    const formattedData = {
+      entry: {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        lat: data.lat,
+        lng: data.lng,
+        image: data.image || null,
+        accessibility: {
+          wheelchair: data.wheelchair,
+          audio: data.audio,
+          vision: data.vision,
+        },
+        // votes: 0 // note needed as server takes care of that :D
+      }
+    };
+
+    try {
+      await createBeacon(formattedData);
+      toast({
+        title: "Success",
+        description: "Report submitted successfully!",
+        duration: 3000,
       });
+      form.reset();
+      setPreview(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        duration: 3000,
+      });
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setValue("image", e.target.files);
-      setPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setValue("image", base64String.split(",")[1]); // Remove data:image/... prefix
+        setPreview(base64String);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -137,64 +175,57 @@ export default function ReportsPage() {
 
               {/* Latitude & Longitude */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Latitude */}
                 <FormField
                   control={form.control}
-                  name="latitude"
+                  name="lat"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Latitude</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter latitude" {...field} />
+                        <Input
+                          placeholder="Enter latitude"
+                          type="number"
+                          step="any"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage>{errors.latitude?.message}</FormMessage>
+                      <FormMessage>{errors.lat?.message}</FormMessage>
                     </FormItem>
                   )}
                 />
 
-                {/* Longitude */}
                 <FormField
                   control={form.control}
-                  name="longitude"
+                  name="lng"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Longitude</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter longitude" {...field} />
+                        <Input
+                          placeholder="Enter longitude"
+                          type="number"
+                          step="any"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage>{errors.longitude?.message}</FormMessage>
+                      <FormMessage>{errors.lng?.message}</FormMessage>
                     </FormItem>
                   )}
                 />
               </div>
 
-
+              {/* Accessibility Options */}
               <div className="space-y-2">
                 <Label className="font-semibold">Accessibility Options</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="wheelchairAccessible"
-                      {...form.register("wheelchairAccessible")}
-                    />
-                    <Label htmlFor="wheelchairAccessible">
-                      Wheelchair Accessible
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="deafFriendly"
-                      {...form.register("deafFriendly")}
-                    />
-                    <Label htmlFor="deafFriendly">Deaf Friendly</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="brailleAvailable"
-                      {...form.register("brailleAvailable")}
-                    />
-                    <Label htmlFor="brailleAvailable">Braille Available</Label>
-                  </div>
+                  <Checkbox id="wheelchair" {...form.register("wheelchair")} />
+                  <Label htmlFor="wheelchair">Wheelchair Accessible</Label>
+
+                  <Checkbox id="audio" {...form.register("audio")} />
+                  <Label htmlFor="audio">Audio Assistance</Label>
+
+                  <Checkbox id="vision" {...form.register("vision")} />
+                  <Label htmlFor="vision">Vision Assistance</Label>
                 </div>
               </div>
 
@@ -204,32 +235,25 @@ export default function ReportsPage() {
                 render={() => (
                   <FormItem>
                     <FormLabel>Upload Image</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleImageChange}
-                        className="cursor-pointer"
-                      />
-                    </FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
                     {preview && (
-                      <div className="flex justify-center mt-2">
-                        <img
-                          src={preview}
-                          alt="Preview"
-                          className="w-24 h-24 object-cover rounded-md border border-gray-300"
-                        />
-                      </div>
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        className="w-24 h-24 object-cover rounded-md border"
+                      />
                     )}
-                    <FormMessage>{errors.image?.message}</FormMessage>
                   </FormItem>
                 )}
               />
 
               <Button
                 type="submit"
-                className="w-full bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-md"
+                className="w-full bg-gray-700 hover:bg-gray-800 text-white"
               >
                 Submit Report
               </Button>
