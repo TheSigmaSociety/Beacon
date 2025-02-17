@@ -1,6 +1,7 @@
 "use client";
 
 import { FaArrowDown } from "react-icons/fa";
+import Image from "next/image";
 
 export default function Hero() {
   return (
@@ -15,13 +16,21 @@ export default function Hero() {
         <h3 className="text-xl md:text-3xl text-black p-6 md:p-12">
           One Beacon at a time.
         </h3>
-        <div className="animate-bounce w-full h-auto flex items-center justify-start p-12">
+        <div className="w-full h-auto flex items-center justify-start p-12">
           Scroll to see the map! &nbsp; <FaArrowDown />
         </div>
       </div>
 
       <div className="w-full md:w-1/2 flex justify-center items-center">
-        <div className="w-3/4 md:w-2/3 lg:w-3/4 aspect-square border-4 mt-0 md:mt-[-2rem] border-black rotating"></div>
+        <div className="w-3/4 md:w-2/3 lg:w-3/4 aspect-square border-4 mt-0 md:mt-[-2rem] border-black rotating">
+        <Image
+            src= "/beacon.png"
+            alt="Beacon Logo"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
       </div>
     </div>
   );

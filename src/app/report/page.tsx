@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getAllBeacons, createBeacon } from "../../lib/api";
+import { createBeacon } from "../../lib/api";
 import {
   Form,
   FormField,
@@ -26,29 +26,13 @@ const formSchema = z.object({
   description: z.string().max(100, "Description cannot exceed 100 characters"),
   location: z.string().min(1, "Location is required"),
   lat: z
-    .string()
-    .refine(
-      (val) =>
-        !isNaN(parseFloat(val)) &&
-        parseFloat(val) >= -90 &&
-        parseFloat(val) <= 90,
-      {
-        message: "Latitude must be a number between -90 and 90",
-      }
-    )
-    .transform((val) => parseFloat(val)),
+    .number()
+    .min(-90, "Latitude must be between -90 and 90")
+    .max(90, "Latitude must be between -90 and 90"),
   lng: z
-    .string()
-    .refine(
-      (val) =>
-        !isNaN(parseFloat(val)) &&
-        parseFloat(val) >= -180 &&
-        parseFloat(val) <= 180,
-      {
-        message: "Longitude must be a number between -180 and 180",
-      }
-    )
-    .transform((val) => parseFloat(val)),
+    .number()
+    .min(-180, "Longitude must be between -180 and 180")
+    .max(180, "Longitude must be between -180 and 180"),
   wheelchair: z.boolean().default(false),
   audio: z.boolean().default(false),
   vision: z.boolean().default(false),
@@ -80,6 +64,32 @@ export default function ReportsPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Fetch user's location on mount
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setValue("lat", position.coords.latitude);
+          setValue("lng", position.coords.longitude);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast({
+            title: "Location Error",
+            description: "Could not fetch your location. Please enter manually.",
+            duration: 3000,
+          });
+        }
+      );
+    } else {
+      toast({
+        title: "Geolocation Unsupported",
+        description: "Your browser does not support geolocation.",
+        duration: 3000,
+      });
+    }
+  }, [setValue, toast]);
+
   const onSubmit = async (data: any) => {
     const formattedData = {
       entry: {
@@ -94,8 +104,7 @@ export default function ReportsPage() {
           audio: data.audio,
           vision: data.vision,
         },
-        // votes: 0 // note needed as server takes care of that :D
-      }
+      },
     };
 
     try {
@@ -132,9 +141,7 @@ export default function ReportsPage() {
   return (
     <div className="w-full min-h-screen bg-[#FAF9F6] flex flex-col bg-hero-polka-dots-100">
       <Header />
-      <div className="absolute top-10 left-[-3rem] w-1/2 h-1/3 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 opacity-40 blur-3xl rounded-full"></div>
-      <div className="absolute bottom-0 right-0 w-1/2 h-2/3 bg-gradient-to-r from-blue-400 via-teal-500 to-green-400 opacity-30 blur-3xl rounded-full"></div>
-      <div className="flex flex-grow items-center justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-hidden z-20">
+      <div className="flex flex-grow items-center justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-gray-800 text-center mb-4">
             Submit a Report
@@ -183,7 +190,7 @@ export default function ReportsPage() {
                       <FormLabel>Latitude</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter latitude"
+                          placeholder="Fetching location..."
                           type="number"
                           step="any"
                           {...field}
@@ -202,7 +209,7 @@ export default function ReportsPage() {
                       <FormLabel>Longitude</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter longitude"
+                          placeholder="Fetching location..."
                           type="number"
                           step="any"
                           {...field}
@@ -251,10 +258,7 @@ export default function ReportsPage() {
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full bg-gray-700 hover:bg-gray-800 text-white"
-              >
+              <Button type="submit" className="w-full bg-gray-700 text-white">
                 Submit Report
               </Button>
             </form>
