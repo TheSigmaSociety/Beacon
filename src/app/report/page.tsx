@@ -71,7 +71,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF9F6] flex flex-col">
+    <div className="w-full min-h-screen bg-[#FAF9F6] flex flex-col bg-hero-polka-dots-100">
       <Header />
       <div className="flex flex-grow items-center justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6 sm:p-8">
@@ -80,7 +80,6 @@ export default function ReportsPage() {
           </h1>
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Title */}
               <FormField
                 control={form.control}
                 name="title"
@@ -95,7 +94,6 @@ export default function ReportsPage() {
                 )}
               />
 
-              {/* Description */}
               <FormField
                 control={form.control}
                 name="description"
@@ -114,7 +112,6 @@ export default function ReportsPage() {
                 )}
               />
 
-              {/* Address */}
               <FormField
                 control={form.control}
                 name="address"
@@ -129,7 +126,6 @@ export default function ReportsPage() {
                 )}
               />
 
-              {/* Accessibility Options */}
               <div className="space-y-2">
                 <Label className="font-semibold">Accessibility Options</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -159,7 +155,6 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Upload Image */}
               <FormField
                 control={form.control}
                 name="image"
@@ -189,7 +184,6 @@ export default function ReportsPage() {
                 )}
               />
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 className="w-full bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-md"
