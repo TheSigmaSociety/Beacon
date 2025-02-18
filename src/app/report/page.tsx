@@ -7,8 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast"; // Ensure you have a toast component
-import { createBeacon } from "@/lib/api"; // Import the API function
+import { useToast } from "@/components/ui/use-toast";
+import { createBeacon } from "@/lib/api";
 import Header from "../header";
 import imageCompression from "browser-image-compression";
 
@@ -28,7 +28,7 @@ export default function ReportForm() {
 
   const { toast } = useToast();
 
-  // ✅ Convert Image to Base64
+  // Convert image to base64 and compress the image
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -36,8 +36,8 @@ export default function ReportForm() {
     if (!file) return;
 
     const options = {
-      maxSizeMB: 0.05, // Reduce max size to 50KB
-      maxWidthOrHeight: 300, // Resize image to 300px max
+      maxSizeMB: 0.05,
+      maxWidthOrHeight: 300,
       useWebWorker: true,
     };
 
@@ -57,7 +57,7 @@ export default function ReportForm() {
     }
   };
 
-  // ✅ Fetch User's Location
+  // get the users geolocation based on their device
   const fetchLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -76,12 +76,11 @@ export default function ReportForm() {
     );
   };
 
-  // Auto-fetch location on component mount
   useEffect(() => {
     fetchLocation();
   }, []);
 
-  // ✅ Handle Form Submission
+  // report form submission
   const onSubmit = async () => {
     if (!title || !description || latitude === null || longitude === null) {
       alert("Please fill out all required fields.");
@@ -113,7 +112,6 @@ export default function ReportForm() {
         duration: 3000,
       });
 
-      // Reset form
       setTitle("");
       setDescription("");
       setWheelchair(false);
@@ -121,7 +119,7 @@ export default function ReportForm() {
       setVision(false);
       setImage(null);
       setImagePreview(null);
-      fetchLocation(); // Refresh location
+      fetchLocation();
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Failed to submit report"
@@ -139,9 +137,10 @@ export default function ReportForm() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
-
+      <div className="absolute top-10 left-[-3rem] w-1/2 h-1/3 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 opacity-40 blur-3xl rounded-full"></div>
+      <div className="absolute bottom-0 right-0 w-1/2 h-2/3 bg-gradient-to-r from-blue-400 via-teal-500 to-green-400 opacity-30 blur-3xl rounded-full"></div>
       <div className="flex justify-center items-center p-4">
-        <Card className="w-full max-w-lg shadow-md">
+        <Card className="w-full max-w-lg shadow-md z-20">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-center">
               Submit a Report
@@ -149,6 +148,7 @@ export default function ReportForm() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+
               {/* Title */}
               <div>
                 <Label htmlFor="title">Title</Label>
@@ -205,7 +205,7 @@ export default function ReportForm() {
                 </div>
               </div>
 
-              {/* Fetch Location Button */}
+              {/* Fetch Coords Button */}
               <Button
                 type="button"
                 onClick={fetchLocation}
@@ -245,7 +245,7 @@ export default function ReportForm() {
                 </div>
               </div>
 
-              {/* File Upload */}
+              {/* Image Upload */}
               <div>
                 <Label htmlFor="image">Upload Image</Label>
                 <Input
@@ -273,7 +273,7 @@ export default function ReportForm() {
                 {isSubmitting ? "Submitting..." : "Submit Report"}
               </Button>
 
-              {/* Error Message */}
+              {/* Error */}
               {submitError && (
                 <p className="text-red-500 text-sm text-center">
                   {submitError}
