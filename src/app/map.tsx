@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import { getAllBeacons, createBeacon, deleteBeacon, upvoteBeacon, downvoteBeacon } from '../lib/api';
-import { Beacon } from '../lib/api';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleMap, LoadScript } from '@react-google-maps/api';
+import { getAllBeacons } from '../lib/api';
+import type { Beacon } from '../lib/api';
+import { MapMarkers } from '@/components/MapMarkers';
+import type { MarkerData } from '@/components/MapMarkers';
+// import "dotenv/config";
 
-const apiKey = "AIzaSyCIqsxA_PgkljVeadCtvVy01qqq4eE12OU";
+const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
+// console.log(apiKey);
 
 const containerStyle: React.CSSProperties = {
   width: '75%',
@@ -17,25 +21,21 @@ const defaultCenter = {
   lng: 150.644
 };
 
-// For storing the latitude and longitude of a location from its address
 interface LatLong {
-    lat: number;
-    lng: number;
+  lat: number;
+  lng: number;
 }
 
 const MapComponent = () => {
   const [userLocation, setUserLocation] = useState(defaultCenter);
-  const [markers, setMarkers] = useState<any[]>([]);
+  const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [error, setError] = useState<string | null>(null);
-
   const [isGeoLoading, setIsGeoLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  /** Gets user location and centers the map on load to the user location */
-  const geocodeAddress = async (address: string): Promise<LatLong | null> => {
+  const geocodeAddress = useCallback(async (address: string): Promise<LatLong | null> => {
     try {
-      // Encode address for URL
       const encodedAddress = encodeURIComponent(address);
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`
@@ -57,9 +57,9 @@ const MapComponent = () => {
       console.error('Geocoding error:', error);
       return null;
     }
-  };
+  }, []);
 
-  const addMarkerFromBeacon = async (beacon: Beacon, setMarkers: React.Dispatch<React.SetStateAction<any[]>>) => {
+  const addMarkerFromBeacon = useCallback(async (beacon: Beacon) => {
     try {
       const location = await geocodeAddress(beacon.location);
       
@@ -68,8 +68,8 @@ const MapComponent = () => {
         return;
       }
   
-      const newMarker = {
-        position: { lat: location.lat, lng: location.lng },
+      const newMarker: MarkerData = {
+        position: location,
         title: beacon.title,
         id: beacon._id,
         data: {
@@ -88,12 +88,11 @@ const MapComponent = () => {
     } catch (error) {
       console.error('Error adding marker:', error);
     }
-  };
+  }, [geocodeAddress]);
 
   useEffect(() => {
     setIsGeoLoading(true);
     
-    // Set timeout to prevent infinite loading using ref
     timeoutRef.current = setTimeout(() => {
       setIsGeoLoading(false);
       setError("Location request timed out");
@@ -142,20 +141,24 @@ const MapComponent = () => {
         const beacons = await getAllBeacons();
         if (Array.isArray(beacons)) {
           for (const beacon of beacons) {
-            await addMarkerFromBeacon(beacon, setMarkers);
+            await addMarkerFromBeacon(beacon);
           }
         }
-      } catch (error: any) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        setError(`Failed to fetch data: ${errorMessage}`);
         console.error('Data fetching error:', error);
-        setError(`Failed to fetch data: ${error.message}`);
       } finally {
         setIsDataLoading(false);
       }
     }
     loadData();
-  }, []);
+  }, [addMarkerFromBeacon]);
   
-  // Modified return statement
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
   return (
     <div className="w-screen h-screen flex justify-center items-center object-cover bg-[#FAF9F6]">
       {isGeoLoading || isDataLoading ? (
@@ -168,7 +171,14 @@ const MapComponent = () => {
             mapContainerStyle={containerStyle}
             center={userLocation}
             zoom={15}
-          />
+          >
+            <MapMarkers 
+              markers={markers}
+              onMarkerClick={(marker) => {
+                console.log('Clicked marker:', marker);
+              }}
+            />
+          </GoogleMap>
         </LoadScript>
       )}
     </div>

@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
+import Link from 'next/link';
 
 export default function Header() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
         <div className="h-20 w-full sticky top-0 flex items-center justify-between bg-gradient-to-b from-[#e3fffc] to-[#fbf9f7] px-6 md:px-12 z-30 border border-gray-200 shadow-lg">
-            <a href="/" className="text-black text-3xl main-font">B E A C O N</a>
+            <Link href="/" className="text-black text-3xl main-font">B E A C O N</Link>
 
             <div className="hidden md:flex text-black text-lg gap-10">
-                <a href="/browse" className="cursor-pointer">Browse</a>
-                <a href="/report"className="cursor-pointer">Report</a>
+                <Link href="/browse" className="cursor-pointer">Browse</Link>
+                <Link href="/report" className="cursor-pointer">Report</Link>
             </div>
 
             <button
@@ -27,8 +28,8 @@ export default function Header() {
                     isOpen ? "translate-y-0 opacity-100" : "-translate-y-5 opacity-0 pointer-events-none"
                 }`}
             >
-                <a href="/browse" className="cursor-pointer py-2 border-b-2 w-full text-center">Browse</a>
-                <a href="/report" className="cursor-pointer pt-2">Report</a>
+                <Link href="/browse" className="cursor-pointer py-2 border-b-2 w-full text-center">Browse</Link>
+                <Link href="/report" className="cursor-pointer pt-2">Report</Link>
             </div>
         </div>
     );

@@ -49,6 +49,8 @@ export async function upvoteBeacon(beaconId: string): Promise<void> {
     method: 'POST',
   });
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Failed to upvote beacon:', errorText);
     throw new Error('Failed to upvote beacon');
   }
 }
@@ -58,6 +60,8 @@ export async function downvoteBeacon(beaconId: string): Promise<void> {
     method: 'POST',
   });
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Failed to downvote beacon:', errorText);
     throw new Error('Failed to downvote beacon');
   }
 }

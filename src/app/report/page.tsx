@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import Header from "../header";
 import { useToast } from "@/components/ui/use-toast";
+import Image from 'next/image';
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -79,6 +80,9 @@ export default function ReportsPage() {
   } = form;
   const [preview, setPreview] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const onSubmit = async (data: any) => {
     const formattedData = {
@@ -98,6 +102,9 @@ export default function ReportsPage() {
       }
     };
 
+    setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
       await createBeacon(formattedData);
       toast({
@@ -108,11 +115,14 @@ export default function ReportsPage() {
       form.reset();
       setPreview(null);
     } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit report');
       toast({
         title: "Error",
         description: "Failed to submit report. Please try again.",
         duration: 3000,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -254,9 +264,13 @@ export default function ReportsPage() {
               <Button
                 type="submit"
                 className="w-full bg-gray-700 hover:bg-gray-800 text-white"
+                disabled={isSubmitting}
               >
-                Submit Report
+                {isSubmitting ? 'Submitting...' : 'Submit Report'}
               </Button>
+              {submitError && (
+                <div className="text-red-500 mt-4">{submitError}</div>
+              )}
             </form>
           </Form>
         </div>
