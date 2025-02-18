@@ -12,7 +12,7 @@ import {
 
 import { upvoteBeacon, downvoteBeacon } from "@/lib/api";
 
-const URL = "https://emp25-backend.hackathon.varram.me"; // change to the actual URL
+const URL = "https://emp25-backend.hackathon.varram.me";
 
 export default function Card({ beaconVal }: { beaconVal: any }) {
   const { _id, title, location, wheelchairAccessible, deafFriendly, visionAccessible, description, votes: initialVotes, image } = beaconVal;

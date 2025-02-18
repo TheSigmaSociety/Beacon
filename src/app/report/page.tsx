@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+// import { useToast } from "@/components/ui/use-toast";
 import Image from 'next/image';
 import { createBeacon } from "@/lib/api";
 import Header from "../header";
@@ -28,6 +28,8 @@ export default function ReportForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // const { toast } = useToast();
 
   // Convert image to base64 and compress the image
   const handleImageUpload = async (
@@ -105,16 +107,13 @@ export default function ReportForm() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    setIsSubmitting(true);
-    setSubmitError(null);
-
     try {
       await createBeacon(formattedData);
-      toast({
-        title: "Success",
-        description: "Report submitted successfully!",
-        duration: 3000,
-      });
+      // toast({
+      //   title: "Success",
+      //   description: "Report submitted successfully!",
+      //   duration: 3000,
+      // });
 
       setTitle("");
       setDescription("");
@@ -129,11 +128,11 @@ export default function ReportForm() {
       setSubmitError(
         error instanceof Error ? error.message : "Failed to submit report"
       );
-      toast({
-        title: "Error",
-        description: "Failed to submit report. Please try again.",
-        duration: 3000,
-      });
+      // toast({
+      //   title: "Error",
+      //   description: "Failed to submit report. Please try again.",
+      //   duration: 3000,
+      // });
     } finally {
       setIsSubmitting(false);
     }
