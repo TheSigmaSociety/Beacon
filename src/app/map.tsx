@@ -3,7 +3,7 @@ import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { getAllBeacons, createBeacon, deleteBeacon, upvoteBeacon, downvoteBeacon } from '../lib/api';
 import { Beacon } from '../lib/api';
 
-const apiKey = "AIzaSyCIqsxA_PgkljVeadCtvVy01qqq4eE12OU";
+const apiKey = "";
 
 const containerStyle: React.CSSProperties = {
   width: '75%',
