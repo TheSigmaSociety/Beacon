@@ -1,106 +1,112 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getAllBeacons, createBeacon } from "../../lib/api";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormControl,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import Header from "../header";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import Image from 'next/image';
+import { createBeacon } from "@/lib/api";
+import Header from "../header";
+import imageCompression from "browser-image-compression";
 
-const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().max(100, "Description cannot exceed 100 characters"),
-  location: z.string().min(1, "Location is required"),
-  lat: z
-    .string()
-    .refine(
-      (val) =>
-        !isNaN(parseFloat(val)) &&
-        parseFloat(val) >= -90 &&
-        parseFloat(val) <= 90,
-      {
-        message: "Latitude must be a number between -90 and 90",
-      }
-    )
-    .transform((val) => parseFloat(val)),
-  lng: z
-    .string()
-    .refine(
-      (val) =>
-        !isNaN(parseFloat(val)) &&
-        parseFloat(val) >= -180 &&
-        parseFloat(val) <= 180,
-      {
-        message: "Longitude must be a number between -180 and 180",
-      }
-    )
-    .transform((val) => parseFloat(val)),
-  wheelchair: z.boolean().default(false),
-  audio: z.boolean().default(false),
-  vision: z.boolean().default(false),
-  image: z.string().optional(),
-});
+export default function ReportForm() {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [wheelchair, setWheelchair] = useState(false);
+  const [audio, setAudio] = useState(false);
+  const [vision, setVision] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-export default function ReportsPage() {
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      location: "",
-      lat: 0,
-      lng: 0,
-      wheelchair: false,
-      audio: false,
-      vision: false,
-      image: "",
-    },
-  });
-
-  const {
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = form;
-  const [preview, setPreview] = useState<string | null>(null);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const onSubmit = async (data: any) => {
-    const formattedData = {
-      entry: {
-        title: data.title,
-        description: data.description,
-        location: data.location,
-        lat: data.lat,
-        lng: data.lng,
-        image: data.image || null,
-        accessibility: {
-          wheelchair: data.wheelchair,
-          audio: data.audio,
-          vision: data.vision,
-        },
-        // votes: 0 // note needed as server takes care of that :D
-      }
+  // Convert image to base64 and compress the image
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const options = {
+      maxSizeMB: 0.05,
+      maxWidthOrHeight: 300,
+      useWebWorker: true,
     };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      const reader = new FileReader();
+
+      reader.readAsDataURL(compressedFile);
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImage(base64String);
+        setImagePreview(base64String);
+      };
+    } catch (error) {
+      console.error("❌ Image compression error:", error);
+      alert("Image compression failed. Please try again.");
+    }
+  };
+
+  // get the users geolocation based on their device
+  const fetchLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+      },
+      (error) => {
+        alert("Unable to retrieve location. Please allow location access.");
+        console.error("❌ Geolocation error:", error);
+      }
+    );
+  };
+
+  useEffect(() => {
+    fetchLocation();
+  }, []);
+
+  // report form submission
+  const onSubmit = async () => {
+    if (!title || !description || latitude === null || longitude === null) {
+      alert("Please fill out all required fields.");
+      return;
+    }
+
+    const formattedData = {
+      title,
+      description,
+      location: address,
+      lat: latitude,
+      lng: longitude,
+      image: image || null,
+      accessibility: {
+        wheelchair,
+        audio,
+        vision,
+      },
+    };
+
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -112,10 +118,20 @@ export default function ReportsPage() {
         description: "Report submitted successfully!",
         duration: 3000,
       });
-      form.reset();
-      setPreview(null);
+
+      setTitle("");
+      setDescription("");
+      setWheelchair(false);
+      setAudio(false);
+      setVision(false);
+      setImage(null);
+      setImagePreview(null);
+      fetchLocation();
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to submit report');
+      setSubmitError(
+        error instanceof Error ? error.message : "Failed to submit report"
+      );
       toast({
         title: "Error",
         description: "Failed to submit report. Please try again.",
@@ -123,157 +139,159 @@ export default function ReportsPage() {
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setValue("image", base64String.split(",")[1]); // Remove data:image/... prefix
-        setPreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF9F6] flex flex-col bg-hero-polka-dots-100">
+    <div className="min-h-screen bg-gray-100">
       <Header />
       <div className="absolute top-10 left-[-3rem] w-1/2 h-1/3 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 opacity-40 blur-3xl rounded-full"></div>
       <div className="absolute bottom-0 right-0 w-1/2 h-2/3 bg-gradient-to-r from-blue-400 via-teal-500 to-green-400 opacity-30 blur-3xl rounded-full"></div>
-      <div className="flex flex-grow items-center justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-hidden z-20">
-        <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6 sm:p-8">
-          <h1 className="text-2xl font-bold text-gray-800 text-center mb-4">
-            Submit a Report
-          </h1>
-          <Form {...form}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter title" {...field} />
-                    </FormControl>
-                    <FormMessage>{errors.title?.message}</FormMessage>
-                  </FormItem>
-                )}
-              />
+      <div className="flex justify-center items-center p-4">
+        <Card className="w-full max-w-lg shadow-md z-20">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-center">
+              Submit a Report
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Describe the report (max 100 characters)"
-                        {...field}
-                        className="resize-none"
-                      />
-                    </FormControl>
-                    <FormMessage>{errors.description?.message}</FormMessage>
-                  </FormItem>
-                )}
-              />
-
-              {/* Latitude & Longitude */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="lat"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Latitude</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter latitude"
-                          type="number"
-                          step="any"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage>{errors.lat?.message}</FormMessage>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lng"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Longitude</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter longitude"
-                          type="number"
-                          step="any"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage>{errors.lng?.message}</FormMessage>
-                    </FormItem>
-                  )}
+              {/* Title */}
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter title"
                 />
               </div>
 
-              {/* Accessibility Options */}
-              <div className="space-y-2">
-                <Label className="font-semibold">Accessibility Options</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Checkbox id="wheelchair" {...form.register("wheelchair")} />
-                  <Label htmlFor="wheelchair">Wheelchair Accessible</Label>
+              {/* Description */}
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter description"
+                />
+              </div>
 
-                  <Checkbox id="audio" {...form.register("audio")} />
-                  <Label htmlFor="audio">Audio Assistance</Label>
+              {/* Address Input */}
+              <div>
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  placeholder="Enter address manually"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
 
-                  <Checkbox id="vision" {...form.register("vision")} />
-                  <Label htmlFor="vision">Vision Assistance</Label>
+              {/* Latitude and Longitude */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    value={latitude ?? ""}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    value={longitude ?? ""}
+                    readOnly
+                  />
                 </div>
               </div>
 
-              <FormField
-                control={form.control}
-                name="image"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Upload Image</FormLabel>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                    {preview && (
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="w-24 h-24 object-cover rounded-md border"
-                      />
-                    )}
-                  </FormItem>
-                )}
-              />
-
+              {/* Fetch Coords Button */}
               <Button
-                type="submit"
-                className="w-full bg-gray-700 hover:bg-gray-800 text-white"
+                type="button"
+                onClick={fetchLocation}
+                className="w-full bg-blue-500 hover:bg-blue-700"
+              >
+                Get Current Location
+              </Button>
+
+              {/* Accessibility Options */}
+              <div>
+                <Label className="font-semibold">Accessibility Options</Label>
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="wheelchair"
+                      checked={wheelchair}
+                      onCheckedChange={setWheelchair}
+                    />
+                    <Label htmlFor="wheelchair">Wheelchair Accessible</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="audio"
+                      checked={audio}
+                      onCheckedChange={setAudio}
+                    />
+                    <Label htmlFor="audio">Audio Accessible</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="vision"
+                      checked={vision}
+                      onCheckedChange={setVision}
+                    />
+                    <Label htmlFor="vision">Vision Accessible</Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <Label htmlFor="image">Upload Image</Label>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="mt-2 w-full h-auto rounded-md"
+                  />
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="button"
+                onClick={onSubmit}
+                className="w-full bg-black hover:bg-gray-800"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                {isSubmitting ? "Submitting..." : "Submit Report"}
               </Button>
+
+              {/* Error */}
               {submitError && (
-                <div className="text-red-500 mt-4">{submitError}</div>
+                <p className="text-red-500 text-sm text-center">
+                  {submitError}
+                </p>
               )}
-            </form>
-          </Form>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
