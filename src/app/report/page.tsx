@@ -27,9 +27,6 @@ export default function ReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Convert image to base64 and compress the image
@@ -137,8 +134,6 @@ export default function ReportForm() {
         description: "Failed to submit report. Please try again.",
         duration: 3000,
       });
-    } finally {
-      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
     }
